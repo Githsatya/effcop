@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+</head>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+ 
+}
+body {
+  display: flex;
+  min-height: 100vh;
+}
+#rangeValue {
+  position: relative;
+  display: block;
+  text-align: center;
+  font-size: 6em;
+  color: #999;
+  font-weight: 400;
+}
+.range1 {
+  width: 400px;
+  height: 15px;
+  background: #111;
+  outline: none;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 1);
+}
+#left-corner {
+  padding: 20px;
+  box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+  position: absolute;
+  top: 100px;
+  left: 0;
+  margin-left: 120px;
+  padding-bottom:250px ;
+}
+#right-corner {
+  padding: 20px;
+  margin-right: 120px;
+  box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+  position: absolute;
+  top:90px;
+  right: 0;
+  
+}
+
+</style>
+<body >
+  <div class="container">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">Dashboard</a>
+        <a href="{% url 'logout' %}" class="navbar-brand">Logout</a>
+      </div>
+    </nav>
+  </div>
+  {% if request.user.is_authenticated %}
+ 
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+    <div>
+        <div>
+           
+            <div id="left-corner">
+            <span id="rangeValue">0</span>
+            <input type="range"  class="range-style range1"  id="slider" value="0" min="0" max="100" step="1" onChange="rangeSlide(this.value)" onmousemove="rangeSlide(this.value)">
+          </div>
+            <script type="text/javascript">
+              function rangeSlide(value) {
+                  document.getElementById('rangeValue').innerHTML = value;
+              }
+          </script>
+<div id="right-corner">
+<canvas id="pieChart" width="400" height="400"></canvas></div>
+  
+</div>
+  <script>
+    const slider = document.getElementById('slider');
+    const ctx = document.getElementById('pieChart').getContext('2d');
+    let pieChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: [
+          'rgba(255, 99, 132, 0.2)',
+          'rgba(54, 162, 235, 0.2)',
+          'rgba(255, 206, 86, 0.2)',
+          'rgba(75, 192, 192, 0.2)',
+          'rgba(153, 102, 255, 0.2)',
+          ],
+          borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)'
+      ],
+      borderWidth: 1
+        }]
+      }
+    });
+
+    slider.addEventListener('change', async (event) => {
+      const value = event.target.value;
+      const response = await fetch('/update_slider/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ value })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        updatePieChart(data.lastFiveValues);
+      }
+    });
+
+    async function updatePieChart(values) {
+      pieChart.data.labels = values.map((_, index) => `Value ${index + 1}`);
+      pieChart.data.datasets[0].data = values;
+      pieChart.update();
+    }
+
+    async function fetchInitialData() {
+      const response = await fetch('/get_last_five/');
+      if (response.ok) {
+        const data = await response.json();
+        updatePieChart(data.lastFiveValues);
+      }
+    }
+
+    fetchInitialData();
+  </script>
+  
+  {% else %}
+<a href="{% url 'login' %}" class="a_tag">Login Here</a>
+{% endif %}
+    
+</body>
+</html>
